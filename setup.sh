@@ -32,7 +32,10 @@ verify() {
     check "t2 kernel running"            'uname -r | grep -q t2'
     check "t2 apt repo configured"        'grep -rqs t2-ubuntu-repo /etc/apt/sources.list.d/'
     echo
-    cat /sys/class/power_supply/BAT0/{status,capacity,cycle_count} 2>/dev/null | paste -sd' ' | sed 's/^/battery: /' || true
+    local b=/sys/class/power_supply/BAT0
+    # health baseline 2026-09-17: 81% at 1136 cycles. Replace below ~75%, on a fast drop, or any swelling.
+    [ -d $b ] && echo "battery: $(cat $b/status) $(cat $b/capacity)%, $(cat $b/cycle_count) cycles," \
+        "health $(( $(cat $b/charge_full) * 100 / $(cat $b/charge_full_design) ))% of design" || true
     sensors 2>/dev/null | grep -Ei 'package|fan' || true
     return $fail
 }
