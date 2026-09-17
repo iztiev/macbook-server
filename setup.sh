@@ -44,9 +44,10 @@ TARGET_USER=${SUDO_USER:?run via sudo from your own account, not as root directl
 TARGET_HOME=$(getent passwd "$TARGET_USER" | cut -d: -f6)
 
 echo "== packages"
-apt-get update
-DEBIAN_FRONTEND=noninteractive apt-get full-upgrade -y
-DEBIAN_FRONTEND=noninteractive apt-get install -y openssh-server lm-sensors
+dpkg --configure -a    # no-op normally; repairs an interrupted apt run
+apt-get -o DPkg::Lock::Timeout=300 update
+DEBIAN_FRONTEND=noninteractive apt-get -o DPkg::Lock::Timeout=300 full-upgrade -y
+DEBIAN_FRONTEND=noninteractive apt-get -o DPkg::Lock::Timeout=300 install -y openssh-server lm-sensors
 grep -rqs t2-ubuntu-repo /etc/apt/sources.list.d/ \
     || echo "WARNING: t2 apt repo missing, kernel updates won't arrive. See README step 4." >&2
 
