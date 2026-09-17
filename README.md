@@ -1,7 +1,11 @@
 # macbook-server
 
 Runbook: 2019 MacBook Pro 16" (A2141, `MacBookPro16,1`, i9, T2) → headless Ubuntu 26.04 server.
-Lid closed, in a wardrobe, wired to Router A, SSH only.
+In a wardrobe with the **lid open** (panel blanked), wired to Router A, SSH only.
+
+Why open: lid closed works (SSH, unattended reboot — both tested) but after sustained load the
+fans stayed at max long after the CPU was back at ~51 °C; they only came down once the lid was
+opened. The keyboard deck is a heat-shedding surface. Nothing in the config depends on the lid.
 
 Verified against the [t2linux wiki](https://wiki.t2linux.org) and
 [T2-Ubuntu v7.1.8-1](https://github.com/t2linux/T2-Ubuntu/releases) (2026-09-03) on 2026-09-17.
@@ -182,7 +186,7 @@ Repeat `ssh-copy-id` from the other clients *before* this, or append their publi
 # no GUI. Desktop packages stay on disk, unused. Purging them is churn for ~2 GB.
 sudo systemctl set-default multi-user.target
 
-# lid closed = do nothing
+# lid switch does nothing, open or closed
 sudo mkdir -p /etc/systemd/logind.conf.d
 printf '[Login]\nHandleLidSwitch=ignore\nHandleLidSwitchExternalPower=ignore\nHandleLidSwitchDocked=ignore\n' \
   | sudo tee /etc/systemd/logind.conf.d/lid.conf
@@ -218,15 +222,15 @@ sensors | grep -Ei 'package|fan|edge'
 
 Then the tests that matter, **before** it goes in the wardrobe:
 
-1. **Lid:** close it, wait 2 min, `ssh macbook uptime` from the PC. Must answer.
-2. **Reboot with lid closed:** `ssh macbook sudo reboot`. Must come back on its own within ~2 min.
-   If not: default boot entry isn't set (step 3.5).
-3. **Heat:** lid closed, `stress-ng --cpu 16 --timeout 10m` (apt install stress-ng) while watching
-   `watch -n2 sensors`. Fans should ramp; package temp should plateau below ~95 °C.
-   Repeat once it's in the wardrobe, door shut. This is the test that decides if the wardrobe works.
-4. **Power loss:** pull the charger. It keeps running on battery (free UPS). Whether it powers
-   itself back on after the battery drains fully, lid closed, is **unknown** — assume not, and
-   expect to open the wardrobe after a multi-hour outage.
+1. **Lid closed still works** (tested 2026-09-17): SSH answers, `sudo reboot` comes back on its
+   own within ~2 min. If a reboot ever hangs at the boot picker: default entry isn't set (step 3.5).
+2. **Heat:** `stress-ng --cpu 16 --timeout 10m` (apt install stress-ng) while watching
+   `watch -n2 "sensors | grep -Ei 'package|fan'"`. Shelf, 2026-09-17: 60 °C with turbo off
+   (100 °C + throttling with turbo on). After the load stops, fans must return to ~1800 RPM.
+   Repeat in the wardrobe, lid open, door shut. This is the test that decides if the wardrobe works.
+3. **Power loss:** pull the charger. It keeps running on battery (free UPS). Whether it powers
+   itself back on after the battery drains fully is **untested** — assume not, and expect to
+   open the wardrobe after a multi-hour outage.
 
 ## Knobs, if the tests say so
 

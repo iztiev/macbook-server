@@ -35,8 +35,14 @@ verify() {
     echo
     local b=/sys/class/power_supply/BAT0
     # health baseline 2026-09-17: 81% at 1136 cycles. Replace below ~75%, on a fast drop, or any swelling.
-    [ -d $b ] && echo "battery: $(cat $b/status) $(cat $b/capacity)%, $(cat $b/cycle_count) cycles," \
-        "health $(( $(cat $b/charge_full) * 100 / $(cat $b/charge_full_design) ))% of design" || true
+    # Raw numbers, not $b/status: that reads "Full" whenever current is 0 (seen at gauge 73%).
+    # current > 0 charging, < 0 discharging, 0 idle. Charging pauses while the battery is warm (~>35 °C).
+    (
+        now=$(cat $b/charge_now) full=$(cat $b/charge_full) design=$(cat $b/charge_full_design)
+        cur=$(cat $b/current_now) temp=$(cat $b/temp)
+        echo "battery: gauge $(cat $b/capacity)%, $((now / 1000))/$((full / 1000)) mAh, current $((cur / 1000)) mA," \
+            "$((temp / 10)).$((temp % 10)) °C, $(cat $b/cycle_count) cycles, health $((full * 100 / design))% of design"
+    ) 2>/dev/null || echo "battery: not readable"
     sensors 2>/dev/null | grep -Ei 'package|fan' || true
     return $fail
 }
