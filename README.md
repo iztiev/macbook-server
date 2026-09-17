@@ -232,7 +232,7 @@ Then the tests that matter, **before** it goes in the wardrobe:
 
 | Symptom | Knob |
 |---|---|
-| Too hot under load | Disable turbo: `echo 'w /sys/devices/system/cpu/intel_pstate/no_turbo - - - - 1' \| sudo tee /etc/tmpfiles.d/no-turbo.conf` + reboot. Big temperature drop, modest speed loss. |
+| Too hot under load | **Applied by `setup.sh`:** turbo off via `/etc/tmpfiles.d/no-turbo.conf`. Measured 2026-09-17, lid closed, `stress-ng --cpu 16`: turbo on = pinned at 100 °C with constant package throttling; turbo off = 60 °C. Want turbo back: delete that file + reboot. |
 | Fans too lazy | `sudo apt install t2fanrd && sudo systemctl enable --now t2fanrd`, curve in `/etc/t2fand.conf`. Default T2-managed fans are usually fine. |
 | Freezes + fans screaming | dGPU. Wiki: `echo 'options apple-gmux force_igd=y' \| sudo tee /etc/modprobe.d/apple-gmux.conf`, or kernel param `amdgpu.dpm=0`. |
 | USB-C adapter flaky | kernel param `pcie_ports=native` (wiki). |

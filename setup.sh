@@ -28,7 +28,8 @@ verify() {
     check "consoleblank on cmdline"       'grep -q consoleblank= /proc/cmdline'
     check "amdgpu pinned to low"          'grep -qx low /sys/bus/pci/drivers/amdgpu/*/power_dpm_force_performance_level'
     check "wireless drivers not loaded"   '! lsmod | grep -qE "^(brcmfmac|hci_bcm4377) "'
-    check "swap active"                   '[ -n "$(swapon --show --noheadings)" ]'
+    check "turbo boost off"               'grep -qx 1 /sys/devices/system/cpu/intel_pstate/no_turbo'
+    check "swap active"                  '[ -n "$(swapon --show --noheadings)" ]'
     check "t2 kernel running"            'uname -r | grep -q t2'
     check "t2 apt repo configured"        'grep -rqs t2-ubuntu-repo /etc/apt/sources.list.d/'
     echo
@@ -114,6 +115,12 @@ echo 'SUBSYSTEM=="drm", DRIVERS=="amdgpu", ATTR{device/power_dpm_force_performan
     > /etc/udev/rules.d/30-amdgpu-pm.rules
 
 printf 'blacklist brcmfmac\nblacklist hci_bcm4377\n' > /etc/modprobe.d/no-wireless.conf
+
+# Turbo off. Measured 2026-09-17, lid closed, stress-ng --cpu 16: turbo on = pinned at 100 °C,
+# constant package throttling; turbo off = 60 °C. Costs burst speed, buys thermal headroom in a wardrobe.
+# Knob: delete this file + reboot to get turbo back (or cap sustained power via RAPL instead).
+echo 'w /sys/devices/system/cpu/intel_pstate/no_turbo - - - - 1' > /etc/tmpfiles.d/no-turbo.conf
+echo 1 > /sys/devices/system/cpu/intel_pstate/no_turbo
 
 cat <<EOF
 
