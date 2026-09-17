@@ -28,7 +28,8 @@ verify() {
     check "consoleblank on cmdline"       'grep -q consoleblank= /proc/cmdline'
     check "amdgpu pinned to low"          'grep -qx low /sys/bus/pci/drivers/amdgpu/*/power_dpm_force_performance_level'
     check "wireless drivers not loaded"   '! lsmod | grep -qE "^(brcmfmac|hci_bcm4377) "'
-    check "t2 kernel running"             'uname -r | grep -q t2'
+    check "swap active"                   '[ -n "$(swapon --show --noheadings)" ]'
+    check "t2 kernel running"            'uname -r | grep -q t2'
     check "t2 apt repo configured"        'grep -rqs t2-ubuntu-repo /etc/apt/sources.list.d/'
     echo
     cat /sys/class/power_supply/BAT0/{status,capacity,cycle_count} 2>/dev/null | paste -sd' ' | sed 's/^/battery: /' || true
@@ -81,6 +82,15 @@ chmod 600 /etc/netplan/01-wired.yaml
 netplan generate    # syntax check, fails the script before we reboot into a broken network
 systemctl disable NetworkManager NetworkManager-wait-online 2>/dev/null || true
 systemctl mask NetworkManager
+
+echo "== swap"
+# A little swap so memory pressure degrades instead of OOM-killing. File, not partition: resizable.
+# ponytail: assumes ext4 root (fallocate swapfiles don't work on btrfs)
+if [ -z "$(swapon --show --noheadings)" ]; then
+    fallocate -l 4G /swap.img && chmod 600 /swap.img && mkswap /swap.img
+    grep -q '^/swap.img' /etc/fstab || echo '/swap.img none swap sw 0 0' >> /etc/fstab
+    swapon /swap.img
+fi
 
 echo "== headless"
 systemctl set-default multi-user.target

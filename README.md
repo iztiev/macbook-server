@@ -83,6 +83,9 @@ without `efi=noruntime`) — not worth it.
    - delete the exFAT `Linux` partition, create `ext4` mounted at `/` in its place
    - `/dev/nvme0n1p1` → mount at `/boot/efi`, **do not format**
    - touch nothing else (the APFS partition is macOS)
+   - no swap partition (`setup.sh` makes a swapfile), no second EFI, no LVM, and **no LUKS** —
+     nobody can type a passphrase at boot in a wardrobe. Known to become a data box? Then
+     split `/` 100 GB + `/srv` rest, so the OS can be reinstalled without losing data.
 4. Hostname `macbook`, create your user. Finish, remove the USB stick, reboot.
 5. Hold `Option (⌥)` → **hold `Control`** and select **EFI Boot** → Enter.
    Control makes it the default, so it boots Linux unattended from now on.
